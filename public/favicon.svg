@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ReelCut">
+  <rect width="64" height="64" rx="14" fill="#0b0e13"/>
+  <rect x="10" y="18" width="44" height="28" rx="4" fill="#1b2029"/>
+  <rect x="10" y="18" width="44" height="5" rx="2.5" fill="#2dd4bf" opacity="0.35"/>
+  <rect x="10" y="41" width="44" height="5" rx="2.5" fill="#2dd4bf" opacity="0.35"/>
+  <rect x="20" y="26" width="12" height="12" rx="2" fill="#f4603e"/>
+  <path d="M38 26 l10 6 -10 6 z" fill="#e7ebf0"/>
+  <rect x="31" y="12" width="2.6" height="40" rx="1.3" fill="#2dd4bf"/>
+</svg>
