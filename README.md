@@ -20,6 +20,8 @@ Nothing is uploaded and nothing is stored. The site is prerendered to files and 
 
 ## 🎯 Key Features
 
+- **Several clips on one timeline** — load more than one recording, cut between them and render the lot into a single file. Each clip is tinted differently on the timeline so it is obvious where one ends.
+- **Delete, not just disable** — a piece can be switched off and brought back, or removed outright; removing a clip takes its pieces with it.
 - **Nothing is uploaded** — the clip is attached through a blob URL held in the tab. There is no server to receive it, which is also why there is no size limit and no queue.
 - **Non-destructive cutting** — a split stores numbers, not frames. A piece switched off stays on the timeline and comes back with one click.
 - **A render that actually produces a file** — frames go through a canvas into `MediaRecorder` and come out as a downloadable WebM, audio included.
@@ -72,7 +74,7 @@ Output is WebM with VP9 or VP8, whichever the browser reports it can record.
 | `src/components/Timeline.tsx`    | The timeline. Pieces are drawn proportional to their length; the playhead marks where a split lands.   |
 | `src/components/FormatPanel.tsx` | Aspect ratio and resolution, with swatches drawn to the real shape.                                    |
 | `src/components/AdjustPanel.tsx` | Sliders and the caption, each announcing a human-readable value.                                       |
-| `src/components/render.ts`       | The render pipeline — canvas, centre crop, `captureStream`, `MediaRecorder`, cancellation.             |
+| `src/components/render.ts`       | The render pipeline — canvas, centre crop, `captureStream`, `MediaRecorder`, cancellation. With several clips their audio is mixed through one AudioContext, because a recorder takes its tracks once at the start. |
 | `src/components/project.ts`      | Types and the maths: splitting, enabled pieces, edited length, output size and crop rectangle.         |
 | `src/components/ThemeToggle.tsx` | The light/dark switch and the script that applies the theme before the first paint.                    |
 | `src/components/content.ts`      | Every string in both languages.                                                                        |

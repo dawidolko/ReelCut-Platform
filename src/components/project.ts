@@ -8,9 +8,21 @@
 
 export type Locale = 'pl' | 'en';
 
-/** A slice of the source footage, in seconds. */
+/** A loaded source file. Several can be on the timeline at once. */
+export type Clip = {
+  id: string;
+  url: string;
+  name: string;
+  size: number;
+  duration: number;
+  width: number;
+  height: number;
+};
+
+/** A slice of one clip, in seconds relative to that clip. */
 export type Piece = {
   id: string;
+  clipId: string;
   from: number;
   to: number;
   /* A piece switched off stays on the timeline but is left out of the render,
@@ -99,13 +111,15 @@ export function editedDuration(pieces: Piece[], speed: number): number {
  * Splits a piece at the given point. A point outside the piece, or too close
  * to an edge, is ignored rather than creating an empty fragment.
  */
-export function splitAt(pieces: Piece[], time: number, minimum = 0.1): Piece[] {
+export function splitAt(pieces: Piece[], time: number, clipId: string, minimum = 0.1): Piece[] {
   const result: Piece[] = [];
   for (const piece of pieces) {
-    const inside = time > piece.from + minimum && time < piece.to - minimum;
+    // Only the clip under the playhead is cut; the rest of the timeline stands.
+    const inside =
+      piece.clipId === clipId && time > piece.from + minimum && time < piece.to - minimum;
     if (inside) {
-      result.push({ id: newId(), from: piece.from, to: time, enabled: piece.enabled });
-      result.push({ id: newId(), from: time, to: piece.to, enabled: piece.enabled });
+      result.push({ id: newId(), clipId: piece.clipId, from: piece.from, to: time, enabled: piece.enabled });
+      result.push({ id: newId(), clipId: piece.clipId, from: time, to: piece.to, enabled: piece.enabled });
     } else {
       result.push(piece);
     }
@@ -120,6 +134,21 @@ export function movePiece(pieces: Piece[], index: number, direction: -1 | 1): Pi
   const copy = [...pieces];
   [copy[index], copy[target]] = [copy[target], copy[index]];
   return copy;
+}
+
+/** Removes one piece from the timeline for good. */
+export function removePiece(pieces: Piece[], id: string): Piece[] {
+  return pieces.filter((piece) => piece.id !== id);
+}
+
+/** Removes a clip together with every piece cut from it. */
+export function removeClip(pieces: Piece[], clipId: string): Piece[] {
+  return pieces.filter((piece) => piece.clipId !== clipId);
+}
+
+/** Total length of the source material across every loaded clip. */
+export function totalSourceDuration(clips: Clip[]): number {
+  return clips.reduce((sum, clip) => sum + clip.duration, 0);
 }
 
 /** The CSS filter string — one source of truth for the preview and the render. */

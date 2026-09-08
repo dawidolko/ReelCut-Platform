@@ -5,45 +5,30 @@ import { DEFAULT_ADJUSTMENTS } from './project';
 import type { Content } from './content';
 
 /*
- * Picture, sound and caption.
- *
- * Every slider carries aria-valuetext with a value that means something to a
- * person — a screen reader says "140%", not "1.4".
+ * Defined at module level on purpose: a component declared inside another
+ * component's body is a new type on every render, so React remounts its
+ * subtree - which loses focus mid-drag on a slider.
  */
-export function AdjustPanel({
-  adjustments,
-  caption,
-  content,
-  onAdjustments,
-  onCaption,
+function Slider({
+  id,
+  label,
+  value,
+  min,
+  max,
+  step = 0.05,
+  format,
+  onChange,
 }: {
-  adjustments: Adjustments;
-  caption: Caption;
-  content: Content;
-  onAdjustments: (update: (previous: Adjustments) => Adjustments) => void;
-  onCaption: (update: (previous: Caption) => Caption) => void;
+  id: string;
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  format: (value: number) => string;
+  onChange: (value: number) => void;
 }) {
-  const a = content.editor.adjust;
-
-  const Slider = ({
-    id,
-    label,
-    value,
-    min,
-    max,
-    step = 0.05,
-    format,
-    onChange,
-  }: {
-    id: string;
-    label: string;
-    value: number;
-    min: number;
-    max: number;
-    step?: number;
-    format: (value: number) => string;
-    onChange: (value: number) => void;
-  }) => (
+  return (
     <div>
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <label htmlFor={id} className="text-sm font-medium text-text">
@@ -64,6 +49,28 @@ export function AdjustPanel({
       />
     </div>
   );
+}
+
+/*
+ * Picture, sound and caption.
+ *
+ * Every slider carries aria-valuetext with a value that means something to a
+ * person — a screen reader says "140%", not "1.4".
+ */
+export function AdjustPanel({
+  adjustments,
+  caption,
+  content,
+  onAdjustments,
+  onCaption,
+}: {
+  adjustments: Adjustments;
+  caption: Caption;
+  content: Content;
+  onAdjustments: (update: (previous: Adjustments) => Adjustments) => void;
+  onCaption: (update: (previous: Caption) => Caption) => void;
+}) {
+  const a = content.editor.adjust;
 
   const percent = (value: number) => `${Math.round(value * 100)}%`;
 

@@ -18,6 +18,7 @@ export type Content = {
     title: string;
     intro: string;
     load: { heading: string; body: string; button: string; formats: string; formatError: string };
+    clips: { title: string; add: string; remove: string; active: string; count: string; totalLength: string };
     transport: { play: string; pause: string; toStart: string; prevFrame: string; nextFrame: string };
     timeline: {
       title: string;
@@ -28,6 +29,7 @@ export type Content = {
       moveLeft: string;
       moveRight: string;
       piece: string;
+      delete: string;
       empty: string;
       sourceLength: string;
       editedLength: string;
@@ -129,6 +131,14 @@ const PL: Content = {
       formats: 'MP4, WebM, MOV — zależnie od przeglądarki',
       formatError: 'Tej przeglądarce nie udało się odtworzyć tego pliku. Spróbuj z MP4 lub WebM.',
     },
+    clips: {
+      title: 'Nagrania',
+      add: 'Dodaj nagranie',
+      remove: 'Usuń nagranie',
+      active: 'Podglądane',
+      count: 'Nagrań na osi',
+      totalLength: 'Łącznie materiału',
+    },
     transport: { play: 'Odtwórz', pause: 'Pauza', toStart: 'Na początek', prevFrame: 'Klatka wstecz', nextFrame: 'Klatka w przód' },
     timeline: {
       title: 'Oś czasu',
@@ -139,6 +149,7 @@ const PL: Content = {
       moveLeft: 'Przesuń w lewo',
       moveRight: 'Przesuń w prawo',
       piece: 'Fragment',
+      delete: 'Usuń fragment',
       empty: 'Wszystkie fragmenty są wyłączone — render nie ma czego zapisać.',
       sourceLength: 'Materiał źródłowy',
       editedLength: 'Po montażu',
@@ -270,6 +281,14 @@ const EN: Content = {
       formats: 'MP4, WebM, MOV — depending on the browser',
       formatError: 'This browser could not play that file. Try MP4 or WebM.',
     },
+    clips: {
+      title: 'Clips',
+      add: 'Add a clip',
+      remove: 'Remove clip',
+      active: 'Previewing',
+      count: 'Clips on the timeline',
+      totalLength: 'Total footage',
+    },
     transport: { play: 'Play', pause: 'Pause', toStart: 'Back to start', prevFrame: 'Previous frame', nextFrame: 'Next frame' },
     timeline: {
       title: 'Timeline',
@@ -280,6 +299,7 @@ const EN: Content = {
       moveLeft: 'Move left',
       moveRight: 'Move right',
       piece: 'Piece',
+      delete: 'Delete piece',
       empty: 'Every piece is switched off — the render has nothing to write.',
       sourceLength: 'Source footage',
       editedLength: 'After editing',

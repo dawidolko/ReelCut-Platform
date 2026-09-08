@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Adjustments, Caption, Format, Piece } from './project';
+import type { Adjustments, Caption, Clip, Format, Piece } from './project';
 import {
   ASPECTS,
   DEFAULT_ADJUSTMENTS,
@@ -13,8 +13,11 @@ import {
   fileSize,
   movePiece,
   newId,
+  removeClip,
+  removePiece,
   splitAt,
   timecode,
+  totalSourceDuration,
 } from './project';
 import type { Content } from './content';
 import { Timeline } from './Timeline';
@@ -25,14 +28,17 @@ import { download, render, renderAvailable } from './render';
 /*
  * The editor — the owner of the whole editing session.
  *
- * The footage lives behind a blob URL created from the file the user picked.
- * There is no upload and no save: closing the tab ends the session, and the
- * interface says so rather than pretending something survives.
+ * Footage lives behind blob URLs created from the files the user picked. There
+ * is no upload and no save: closing the tab ends the session, and the interface
+ * says so rather than pretending something survives.
+ *
+ * Several clips can be loaded at once. Each one gets its own player, all of
+ * them mounted so the render can reach any clip, and only the previewed one is
+ * visible.
  */
 export function Editor({ content }: { content: Content }) {
-  const [source, setSource] = useState<{ url: string; name: string; size: number } | null>(null);
-  const [duration, setDuration] = useState(0);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [clips, setClips] = useState<Clip[]>([]);
+  const [activeClipId, setActiveClipId] = useState<string | null>(null);
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -46,51 +52,76 @@ export function Editor({ content }: { content: Content }) {
   const [dragOver, setDragOver] = useState(false);
   const [canRender, setCanRender] = useState(true);
 
-  const video = useRef<HTMLVideoElement>(null);
+  /* One player per clip, so the render can seek any of them. */
+  const players = useRef(new Map<string, HTMLVideoElement>());
   const fileInput = useRef<HTMLInputElement>(null);
   const stopped = useRef(false);
 
-  // MediaRecorder is only checked in the browser — the build has no such API.
   useEffect(() => setCanRender(renderAvailable()), []);
 
-  // The blob URL has to be released, or the footage stays in the tab's memory.
+  const activeClip = clips.find((clip) => clip.id === activeClipId) ?? null;
+  const activePlayer = () => (activeClipId ? players.current.get(activeClipId) ?? null : null);
+
+  /* Blob URLs have to be released, or the footage stays in the tab's memory. */
   useEffect(() => {
+    const urls = clips.map((clip) => clip.url);
     return () => {
-      if (source) URL.revokeObjectURL(source.url);
+      for (const url of urls) URL.revokeObjectURL(url);
     };
-  }, [source]);
+    // Only on unmount: revoking on every change would kill the loaded clips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const loadFile = useCallback(
-    (file: File) => {
-      setError('');
-      setResult(null);
-      if (source) URL.revokeObjectURL(source.url);
-      setSource({ url: URL.createObjectURL(file), name: file.name, size: file.size });
-      setPieces([]);
-      setPosition(0);
-      setPlaying(false);
-    },
-    [source],
-  );
+  const addFiles = useCallback((files: FileList | File[]) => {
+    setError('');
+    setResult(null);
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('video/')) continue;
+      const clip: Clip = {
+        id: newId(),
+        url: URL.createObjectURL(file),
+        name: file.name,
+        size: file.size,
+        duration: 0,
+        width: 0,
+        height: 0,
+      };
+      setClips((current) => [...current, clip]);
+      setActiveClipId((current) => current ?? clip.id);
+    }
+  }, []);
 
-  function onLoaded() {
-    const element = video.current;
-    if (!element || !Number.isFinite(element.duration)) return;
-    setDuration(element.duration);
-    setDimensions({ width: element.videoWidth, height: element.videoHeight });
-    setPieces([{ id: newId(), from: 0, to: element.duration, enabled: true }]);
+  /*
+   * Duration and dimensions are only known once the browser has read the file,
+   * so the clip is completed here and its first piece created.
+   */
+  function onLoaded(clipId: string, element: HTMLVideoElement) {
+    if (!Number.isFinite(element.duration)) return;
+    setClips((current) =>
+      current.map((clip) =>
+        clip.id === clipId
+          ? { ...clip, duration: element.duration, width: element.videoWidth, height: element.videoHeight }
+          : clip,
+      ),
+    );
+    setPieces((current) =>
+      current.some((piece) => piece.clipId === clipId)
+        ? current
+        : [...current, { id: newId(), clipId, from: 0, to: element.duration, enabled: true }],
+    );
   }
 
   const seek = useCallback((seconds: number) => {
-    const element = video.current;
+    const element = activePlayer();
     if (!element) return;
     const target = Math.max(0, Math.min(seconds, element.duration || 0));
     element.currentTime = target;
     setPosition(target);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClipId]);
 
   const togglePlay = useCallback(() => {
-    const element = video.current;
+    const element = activePlayer();
     if (!element) return;
     if (element.paused) {
       void element.play();
@@ -99,12 +130,13 @@ export function Editor({ content }: { content: Content }) {
       element.pause();
       setPlaying(false);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClipId]);
 
-  /* Space and arrows work only when focus is outside a field — otherwise a
-     space could not be typed into the caption. */
+  /* Space and arrows work only when focus is outside a field, so a space can
+     still be typed into the caption. */
   useEffect(() => {
-    if (!source) return;
+    if (!clips.length) return;
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
@@ -114,29 +146,42 @@ export function Editor({ content }: { content: Content }) {
         togglePlay();
       } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
-        seek((video.current?.currentTime ?? 0) - 1 / 25);
+        seek((activePlayer()?.currentTime ?? 0) - 1 / 25);
       } else if (event.key === 'ArrowRight') {
         event.preventDefault();
-        seek((video.current?.currentTime ?? 0) + 1 / 25);
+        seek((activePlayer()?.currentTime ?? 0) + 1 / 25);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [source, seek, togglePlay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clips.length, seek, togglePlay]);
+
+  function dropClip(clipId: string) {
+    setPieces((current) => removeClip(current, clipId));
+    setClips((current) => {
+      const gone = current.find((clip) => clip.id === clipId);
+      if (gone) URL.revokeObjectURL(gone.url);
+      const left = current.filter((clip) => clip.id !== clipId);
+      setActiveClipId((active) => (active === clipId ? (left[0]?.id ?? null) : active));
+      return left;
+    });
+    players.current.delete(clipId);
+    setResult(null);
+  }
 
   async function startRender() {
-    const element = video.current;
-    if (!element) return;
     stopped.current = false;
     setResult(null);
     setError('');
     setProgress({ done: 0, total: editedDuration(pieces, 1) });
     setPlaying(false);
-    element.pause();
+    for (const player of players.current.values()) player.pause();
 
     try {
       const rendered = await render({
-        video: element,
+        videos: players.current,
+        clips,
         pieces,
         adjustments,
         caption,
@@ -157,9 +202,23 @@ export function Editor({ content }: { content: Content }) {
   const secondary =
     'rounded-lg border border-edge px-3 py-2 text-sm font-medium text-text transition-colors hover:border-lime hover:text-lime';
 
-  // The preview is framed to the chosen aspect, so it crops exactly like the render.
-  const sourceRatio = dimensions.width > 0 ? dimensions.width / dimensions.height : 16 / 9;
+  const sourceRatio = activeClip && activeClip.width > 0 ? activeClip.width / activeClip.height : 16 / 9;
   const previewRatio = ASPECTS.find((entry) => entry.id === format.aspect)?.ratio ?? sourceRatio;
+
+  const fileField = (
+    <input
+      ref={fileInput}
+      type="file"
+      accept="video/*"
+      multiple
+      className="sr-only"
+      aria-label={e.load.button}
+      onChange={(event) => {
+        if (event.target.files) addFiles(event.target.files);
+        event.target.value = '';
+      }}
+    />
+  );
 
   return (
     <section id="editor" className="scroll-mt-20 border-t border-edge bg-panel/40 py-14 sm:py-20">
@@ -169,7 +228,7 @@ export function Editor({ content }: { content: Content }) {
           <p className="mt-3 text-text-3">{e.intro}</p>
         </header>
 
-        {!source ? (
+        {clips.length === 0 ? (
           <div
             onDragOver={(event) => {
               event.preventDefault();
@@ -179,8 +238,7 @@ export function Editor({ content }: { content: Content }) {
             onDrop={(event) => {
               event.preventDefault();
               setDragOver(false);
-              const file = event.dataTransfer.files?.[0];
-              if (file) loadFile(file);
+              if (event.dataTransfer.files) addFiles(event.dataTransfer.files);
             }}
             className={`rounded-2xl border-2 border-dashed p-10 text-center transition-colors sm:p-16 ${
               dragOver ? 'border-lime bg-lime-soft' : 'border-edge bg-panel'
@@ -196,41 +254,41 @@ export function Editor({ content }: { content: Content }) {
               {e.load.button}
             </button>
             <p className="mt-3 text-xs text-text-4">{e.load.formats}</p>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="video/*"
-              className="sr-only"
-              aria-label={e.load.button}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) loadFile(file);
-                event.target.value = '';
-              }}
-            />
+            {fileField}
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div>
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="min-w-0">
               <div className="overflow-hidden rounded-xl border border-edge bg-panel">
                 {/* The stage stays black in both themes — footage is judged on black. */}
                 <div className="flex justify-center bg-black p-3">
                   <div
-                    className="relative max-h-[62vh] overflow-hidden bg-black"
+                    className="relative max-h-[62vh] max-w-full overflow-hidden bg-black"
                     style={{ aspectRatio: String(previewRatio) }}
                   >
-                    <video
-                      ref={video}
-                      src={source.url}
-                      onLoadedMetadata={onLoaded}
-                      onTimeUpdate={(event) => setPosition(event.currentTarget.currentTime)}
-                      onPlay={() => setPlaying(true)}
-                      onPause={() => setPlaying(false)}
-                      onError={() => setError(e.load.formatError)}
-                      style={{ filter: cssFilter(adjustments) }}
-                      className="size-full object-cover"
-                      playsInline
-                    />
+                    {clips.map((clip) => (
+                      <video
+                        key={clip.id}
+                        ref={(element) => {
+                          if (element) players.current.set(clip.id, element);
+                          else players.current.delete(clip.id);
+                        }}
+                        src={clip.url}
+                        onLoadedMetadata={(event) => onLoaded(clip.id, event.currentTarget)}
+                        onTimeUpdate={(event) => {
+                          if (clip.id === activeClipId) setPosition(event.currentTarget.currentTime);
+                        }}
+                        onPlay={() => clip.id === activeClipId && setPlaying(true)}
+                        onPause={() => clip.id === activeClipId && setPlaying(false)}
+                        onError={() => setError(e.load.formatError)}
+                        style={{ filter: cssFilter(adjustments) }}
+                        /* Every clip stays mounted so the render can reach it;
+                           only the previewed one is shown. */
+                        className={`size-full object-cover ${clip.id === activeClipId ? '' : 'hidden'}`}
+                        playsInline
+                      />
+                    ))}
+
                     {caption.text.trim() && (
                       <p
                         aria-hidden="true"
@@ -265,18 +323,18 @@ export function Editor({ content }: { content: Content }) {
                     {e.transport.nextFrame}
                   </button>
                   <span className="ml-auto text-sm tabular-nums text-text-3">
-                    {timecode(position)} / {timecode(duration)}
+                    {timecode(position)} / {timecode(activeClip?.duration ?? 0)}
                   </span>
                 </div>
               </div>
 
-              <div className="mt-5 rounded-xl border border-edge bg-panel p-4">
+              <div className="mt-5 min-w-0 rounded-xl border border-edge bg-panel p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h3 className="font-display text-sm font-bold uppercase tracking-wider text-text-3">{e.timeline.title}</h3>
                     <p className="mt-0.5 text-xs text-text-4">{e.timeline.body}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <label htmlFor="timeline-zoom" className="text-xs text-text-4">
                       {e.timeline.zoom}
                     </label>
@@ -293,7 +351,7 @@ export function Editor({ content }: { content: Content }) {
                     />
                     <button
                       type="button"
-                      onClick={() => setPieces((current) => splitAt(current, position))}
+                      onClick={() => activeClipId && setPieces((current) => splitAt(current, position, activeClipId))}
                       className="rounded-lg bg-cut px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-cut-2"
                     >
                       {e.timeline.split}
@@ -303,25 +361,35 @@ export function Editor({ content }: { content: Content }) {
 
                 <Timeline
                   pieces={pieces}
-                  duration={duration}
+                  clips={clips}
+                  activeClipId={activeClipId}
+                  duration={activeClip?.duration ?? 0}
                   position={position}
                   zoom={zoom}
                   content={content}
                   onSeek={seek}
                   onToggle={(id) =>
-                    setPieces((current) => current.map((piece) => (piece.id === id ? { ...piece, enabled: !piece.enabled } : piece)))
+                    setPieces((current) =>
+                      current.map((piece) => (piece.id === id ? { ...piece, enabled: !piece.enabled } : piece)),
+                    )
                   }
                   onMove={(index, direction) => setPieces((current) => movePiece(current, index, direction))}
+                  onDelete={(id) => setPieces((current) => removePiece(current, id))}
+                  onSelectClip={(clipId) => setActiveClipId(clipId)}
                 />
 
                 <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-1 text-sm">
                   <div className="flex gap-2">
-                    <dt className="text-text-4">{e.timeline.sourceLength}:</dt>
-                    <dd className="tabular-nums text-text">{timecode(duration)}</dd>
+                    <dt className="text-text-4">{e.clips.totalLength}:</dt>
+                    <dd className="tabular-nums text-text">{timecode(totalSourceDuration(clips))}</dd>
                   </div>
                   <div className="flex gap-2">
                     <dt className="text-text-4">{e.timeline.editedLength}:</dt>
                     <dd className="tabular-nums text-lime">{timecode(editedDuration(pieces, adjustments.speed))}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="text-text-4">{e.clips.count}:</dt>
+                    <dd className="tabular-nums text-text">{clips.length}</dd>
                   </div>
                 </dl>
 
@@ -329,13 +397,61 @@ export function Editor({ content }: { content: Content }) {
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
+              {/* Loaded clips */}
+              <div className="rounded-xl border border-edge bg-panel p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-text-3">{e.clips.title}</h3>
+                  <button type="button" onClick={() => fileInput.current?.click()} className="rounded-lg border border-lime px-2.5 py-1 text-xs font-semibold text-lime transition-colors hover:bg-lime-soft">
+                    + {e.clips.add}
+                  </button>
+                </div>
+                {fileField}
+
+                <ul className="space-y-2">
+                  {clips.map((clip, index) => (
+                    <li
+                      key={clip.id}
+                      className={`flex items-center gap-2 rounded-lg border p-2 ${
+                        clip.id === activeClipId ? 'border-lime bg-lime-soft' : 'border-edge'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveClipId(clip.id);
+                          setPosition(0);
+                        }}
+                        className="min-w-0 flex-1 text-left"
+                        aria-pressed={clip.id === activeClipId}
+                      >
+                        <span className="block truncate text-xs font-medium text-text">
+                          #{index + 1} {clip.name}
+                        </span>
+                        <span className="block text-[11px] tabular-nums text-text-4">
+                          {timecode(clip.duration)} · {fileSize(clip.size)}
+                          {clip.width > 0 && ` · ${clip.width}×${clip.height}`}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => dropClip(clip.id)}
+                        className="shrink-0 rounded border border-edge px-1.5 py-1 text-[11px] text-text-3 transition-colors hover:border-cut hover:text-cut"
+                      >
+                        <span aria-hidden="true">✕</span>
+                        <span className="sr-only">{e.clips.remove}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="rounded-xl border border-edge bg-panel p-4">
                 <h3 className="mb-3 font-display text-sm font-bold uppercase tracking-wider text-text-3">{e.format.title}</h3>
                 <FormatPanel
                   format={format}
-                  sourceWidth={dimensions.width}
-                  sourceHeight={dimensions.height}
+                  sourceWidth={activeClip?.width ?? 0}
+                  sourceHeight={activeClip?.height ?? 0}
                   content={content}
                   onChange={setFormat}
                 />
@@ -394,7 +510,7 @@ export function Editor({ content }: { content: Content }) {
                     </p>
                     <button
                       type="button"
-                      onClick={() => download(result.blob, source.name, result.extension)}
+                      onClick={() => download(result.blob, clips[0]?.name ?? 'reelcut', result.extension)}
                       className="mt-3 w-full rounded-lg bg-lime px-4 py-2.5 text-sm font-semibold text-base transition-colors hover:bg-lime-2"
                     >
                       {e.render.download}
@@ -423,11 +539,6 @@ export function Editor({ content }: { content: Content }) {
                   </p>
                 )}
               </div>
-
-              <p className="px-1 text-xs text-text-4">
-                {source.name} · {fileSize(source.size)}
-                {dimensions.width > 0 && ` · ${dimensions.width}×${dimensions.height}`}
-              </p>
             </div>
           </div>
         )}

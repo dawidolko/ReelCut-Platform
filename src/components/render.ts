@@ -10,7 +10,7 @@
  * because the frames genuinely have to pass through the player.
  */
 
-import type { Adjustments, Caption, Format, Piece } from './project';
+import type { Adjustments, Caption, Clip, Format, Piece } from './project';
 import { cropRect, cssFilter, enabledPieces, outputSize } from './project';
 
 export type RenderProgress = {
@@ -46,6 +46,49 @@ export function renderAvailable(): boolean {
     typeof HTMLCanvasElement.prototype.captureStream === 'function' &&
     pickFormat() !== null
   );
+}
+
+/*
+ * Audio for a multi-clip render.
+ *
+ * MediaRecorder takes its tracks when recording starts, so swapping a track
+ * per clip mid-render is not an option. Instead every player is routed through
+ * one AudioContext into a single destination, and the recorder gets that.
+ *
+ * createMediaElementSource can only be called once per element and it takes
+ * the audio away from the speakers, so the nodes are cached and also connected
+ * to the normal output - otherwise the preview would fall silent after the
+ * first render.
+ */
+type AudioRig = {
+  context: AudioContext;
+  destination: MediaStreamAudioDestinationNode;
+  sources: WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>;
+};
+
+let audioRig: AudioRig | null = null;
+
+function mixerFor(videos: HTMLVideoElement[]): MediaStreamAudioDestinationNode | null {
+  try {
+    if (!audioRig) {
+      const context = new AudioContext();
+      audioRig = { context, destination: context.createMediaStreamDestination(), sources: new WeakMap() };
+    }
+    const rig = audioRig;
+    void rig.context.resume();
+
+    for (const video of videos) {
+      if (rig.sources.has(video)) continue;
+      const source = rig.context.createMediaElementSource(video);
+      source.connect(rig.destination);
+      source.connect(rig.context.destination);
+      rig.sources.set(video, source);
+    }
+    return rig.destination;
+  } catch {
+    // No Web Audio (or an element already wired elsewhere): render stays silent.
+    return null;
+  }
 }
 
 /** Seeks and waits until the browser has actually produced the new frame. */
@@ -127,7 +170,9 @@ function drawCaption(
 }
 
 export async function render(options: {
-  video: HTMLVideoElement;
+  /** One player per loaded clip, keyed by clip id. */
+  videos: Map<string, HTMLVideoElement>;
+  clips: Clip[];
   pieces: Piece[];
   adjustments: Adjustments;
   caption: Caption;
@@ -135,18 +180,23 @@ export async function render(options: {
   onProgress?: (progress: RenderProgress) => void;
   cancelled?: () => boolean;
 }): Promise<RenderResult> {
-  const { video, pieces, adjustments, caption, format, onProgress, cancelled } = options;
+  const { videos, clips, pieces, adjustments, caption, format, onProgress, cancelled } = options;
 
   const container = pickFormat();
   if (!container) throw new Error('This browser cannot record any of the supported formats.');
 
-  const toRender = enabledPieces(pieces);
+  const toRender = enabledPieces(pieces).filter((piece) => videos.has(piece.clipId));
   if (toRender.length === 0) throw new Error('There are no pieces to render.');
 
-  const sourceWidth = video.videoWidth || 1280;
-  const sourceHeight = video.videoHeight || 720;
+  /*
+   * The output shape comes from the first clip on the timeline. Every other
+   * clip is cropped into that same frame, so a mixed-orientation timeline
+   * still produces one consistent file rather than a jumping picture.
+   */
+  const first = clips.find((clip) => clip.id === toRender[0].clipId);
+  const sourceWidth = first?.width || 1280;
+  const sourceHeight = first?.height || 720;
   const { width, height } = outputSize(format, sourceWidth, sourceHeight);
-  const crop = cropRect(sourceWidth, sourceHeight, width, height);
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -154,10 +204,16 @@ export async function render(options: {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not create a 2D context.');
 
+  const players = [...videos.values()];
   const canvasStream = canvas.captureStream(30);
-  const playerStream = sourceStream(video);
-  const audioTracks = adjustments.muted ? [] : (playerStream?.getAudioTracks() ?? []);
-  for (const track of audioTracks) canvasStream.addTrack(track);
+
+  if (!adjustments.muted) {
+    const mixed = players.length > 1 ? mixerFor(players) : null;
+    const tracks = mixed
+      ? mixed.stream.getAudioTracks()
+      : (sourceStream(players[0])?.getAudioTracks() ?? []);
+    for (const track of tracks) canvasStream.addTrack(track);
+  }
 
   const recorder = new MediaRecorder(canvasStream, { mimeType: container.mimeType });
   const chunks: BlobPart[] = [];
@@ -172,22 +228,31 @@ export async function render(options: {
   const totalSeconds = toRender.reduce((sum, piece) => sum + Math.max(0, piece.to - piece.from), 0);
   let rendered = 0;
 
-  const before = {
-    time: video.currentTime,
-    speed: video.playbackRate,
-    volume: video.volume,
-    muted: video.muted,
-  };
+  const before = players.map((player) => ({
+    player,
+    time: player.currentTime,
+    speed: player.playbackRate,
+    volume: player.volume,
+    muted: player.muted,
+  }));
 
-  video.playbackRate = adjustments.speed;
-  video.volume = adjustments.volume;
-  video.muted = adjustments.muted;
+  for (const player of players) {
+    player.playbackRate = adjustments.speed;
+    player.volume = adjustments.volume;
+    player.muted = adjustments.muted;
+  }
 
   recorder.start(250);
 
   try {
     for (const piece of toRender) {
       if (cancelled?.()) break;
+
+      const video = videos.get(piece.clipId);
+      if (!video) continue;
+
+      // Each clip is cropped from its own dimensions into the shared frame.
+      const crop = cropRect(video.videoWidth || sourceWidth, video.videoHeight || sourceHeight, width, height);
 
       await seek(video, piece.from);
       await video.play();
@@ -218,15 +283,17 @@ export async function render(options: {
       onProgress?.({ doneSeconds: rendered, totalSeconds });
     }
   } finally {
-    video.pause();
+    for (const player of players) player.pause();
     if (recorder.state !== 'inactive') recorder.stop();
     await finished;
 
-    // Put the player back as it was, so the preview keeps working.
-    video.playbackRate = before.speed;
-    video.volume = before.volume;
-    video.muted = before.muted;
-    video.currentTime = before.time;
+    // Put every player back as it was, so the preview keeps working.
+    for (const state of before) {
+      state.player.playbackRate = state.speed;
+      state.player.volume = state.volume;
+      state.player.muted = state.muted;
+      state.player.currentTime = state.time;
+    }
   }
 
   return { blob: new Blob(chunks, { type: container.mimeType }), extension: container.extension };
