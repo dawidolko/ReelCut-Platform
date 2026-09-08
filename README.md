@@ -1,8 +1,8 @@
 # ReelCut
 
-> ✂️ **The footage never leaves the tab** — trim, arrange, adjust and render a video without uploading it anywhere
+> ✂️ **The footage never leaves the tab** — trim, crop to 9:16 and render a reel without uploading it anywhere
 
-**ReelCut** is a video editor that runs inside a browser tab. Load a clip from disk, split it on the timeline, switch off the parts you do not want, correct the picture and sound, and render a finished file you can download straight away.
+**ReelCut** is a video editor that runs inside a browser tab. Load a clip from disk, split it on the timeline, switch off the parts you do not want, crop it to the shape the platform wants, correct picture and sound, and render a finished file you can download straight away.
 
 Nothing is uploaded and nothing is stored. The site is prerendered to files and served by GitHub Pages; the footage reaches the player through a blob URL that exists only in your tab.
 
@@ -23,7 +23,10 @@ Nothing is uploaded and nothing is stored. The site is prerendered to files and 
 - **Nothing is uploaded** — the clip is attached through a blob URL held in the tab. There is no server to receive it, which is also why there is no size limit and no queue.
 - **Non-destructive cutting** — a split stores numbers, not frames. A piece switched off stays on the timeline and comes back with one click.
 - **A render that actually produces a file** — frames go through a canvas into `MediaRecorder` and come out as a downloadable WebM, audio included.
-- **Picture and sound correction** — brightness, contrast, saturation, playback speed, volume and a caption at the top or bottom of the frame, all previewed live.
+- **A crop for every platform** — vertical 9:16 for reels and shorts, 4:5, square or wide, at 480p, 720p or 1080p. The frame is cropped from the centre, never stretched, and the preview is framed to the exact shape the render produces.
+- **Picture and sound correction** — brightness, contrast, saturation, playback speed, volume and a caption in three styles (bar, outline, shadow) at the top or bottom of the frame, all previewed live.
+- **Light and dark themes** — dark by default, because footage is judged against dark surroundings; applied before the first paint so the page never flashes the wrong one.
+- **A zoomable timeline** — widen the rail to trim precisely on a long clip, and reorder pieces from the keyboard.
 - **Keyboard transport** — space plays and pauses, arrows step one frame, and the shortcuts stand down while focus is in a text field.
 - **Bilingual** — English at `/`, Polish at `/pl/`, with matching `hreflang` pairs and separate JSON-LD.
 
@@ -31,15 +34,17 @@ Nothing is uploaded and nothing is stored. The site is prerendered to files and 
 
 ## 🖼️ Screenshots
 
-| The premise in one screen                                       | Loading footage                                                    |
+| The premise in one screen                                       | The same, in dark                                                  |
 | --------------------------------------------------------------- | -------------------------------------------------------------------- |
-| ![The ReelCut hero explaining that footage never leaves the tab](docs/screenshots/hero.webp) | ![The drop area waiting for a video file](docs/screenshots/wczytywanie.webp) |
+| ![The ReelCut hero explaining that footage never leaves the tab](docs/screenshots/hero.webp) | ![The hero with the 9:16 crop drawn over a frame](docs/screenshots/hero.webp) |
 
-| The editor: preview, timeline and correction panel                       | A finished render ready to download                            |
+| The editor: 9:16 crop, timeline and caption styles                       | A finished render ready to download                            |
 | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| ![The editor with a clip loaded, a caption on the frame and two timeline pieces](docs/screenshots/edytor.webp) | ![The render panel reporting a finished WebM file](docs/screenshots/render.webp) |
+| ![The editor with a clip cropped to 9:16, an outlined caption and two timeline pieces](docs/screenshots/editor.webp) | ![The render panel reporting a finished WebM file](docs/screenshots/render.webp) |
 
-![The timeline with one piece kept and one switched off](docs/screenshots/os-czasu.webp)
+| The same page in the light theme                                     |
+| ---------------------------------------------------------------------- |
+| ![The hero rendered in the light theme](docs/screenshots/hero-light.webp) |
 
 ---
 
@@ -49,7 +54,7 @@ The interesting constraint is that GitHub Pages cannot set response headers. Tha
 
 1. A `<canvas>` is sized to the source video and captured with `canvas.captureStream(30)`.
 2. The audio track is taken from the player's own stream — `captureStream()` in Chrome, `mozCaptureStream()` in Firefox — and added to the recording.
-3. `MediaRecorder` starts, and the render walks the kept pieces in order: seek, play, and draw each frame with `ctx.filter` carrying the same correction string the preview uses.
+3. `MediaRecorder` starts, and the render walks the kept pieces in order: seek, play, and draw each frame with `ctx.filter` carrying the same correction string the preview uses. When a crop is selected, `drawImage` takes a centre rectangle from the source rather than scaling it, so nothing is stretched.
 4. On the last piece the recorder stops and the chunks become a `Blob`.
 
 **The honest trade-off:** the frames genuinely have to pass through the player, so rendering runs in real time — a minute of footage takes about a minute. The interface says so before you start, rather than leaving you guessing at a stalled progress bar.
@@ -63,12 +68,14 @@ Output is WebM with VP9 or VP8, whichever the browser reports it can record.
 | Layer                            | Responsibility                                                                                     |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `src/app`                        | Routing, per-language metadata, fonts, JSON-LD. Two prerendered routes: `/` and `/pl/`.               |
-| `src/components/Edytor.tsx`      | The session: the blob URL, timeline state, corrections, keyboard transport and the render lifecycle.   |
-| `src/components/OsCzasu.tsx`     | The timeline. Pieces are drawn proportional to their length; the playhead marks where a split lands.   |
-| `src/components/PanelKorekty.tsx` | Sliders and the caption, each announcing a human-readable value.                                     |
-| `src/components/eksport.ts`      | The render pipeline — canvas, `captureStream`, `MediaRecorder`, format negotiation and cancellation.  |
-| `src/components/model.ts`        | Types and the timeline maths: splitting, active pieces, montage length, time formatting.              |
-| `src/components/tresc.ts`        | Every string in both languages.                                                                       |
+| `src/components/Editor.tsx`      | The session: the blob URL, timeline state, corrections, keyboard transport and the render lifecycle.   |
+| `src/components/Timeline.tsx`    | The timeline. Pieces are drawn proportional to their length; the playhead marks where a split lands.   |
+| `src/components/FormatPanel.tsx` | Aspect ratio and resolution, with swatches drawn to the real shape.                                    |
+| `src/components/AdjustPanel.tsx` | Sliders and the caption, each announcing a human-readable value.                                       |
+| `src/components/render.ts`       | The render pipeline — canvas, centre crop, `captureStream`, `MediaRecorder`, cancellation.             |
+| `src/components/project.ts`      | Types and the maths: splitting, enabled pieces, edited length, output size and crop rectangle.         |
+| `src/components/ThemeToggle.tsx` | The light/dark switch and the script that applies the theme before the first paint.                    |
+| `src/components/content.ts`      | Every string in both languages.                                                                        |
 | `src/app/globals.css`            | Design tokens and the timeline slider skin.                                                           |
 
 ---
@@ -129,7 +136,9 @@ npm run verify     # typecheck + build, the same pair the CI runs
 
 ## 🎨 Design
 
-An editing room, not a document: a near-black base (`#0b0e13`) because footage is judged against dark surroundings, coral (`#f4603e`) reserved for cutting and anything destructive, and teal (`#2dd4bf`) used only for the playhead and confirmations. Display type is **Space Grotesk**, body text is **Inter**.
+A cutting room, not a document: a cold near-black base (`#0a0c11`) because footage is judged against dark surroundings, electric lime (`#b8f135`) for anything that acts, and a warm red (`#ff5c47`) reserved strictly for cuts and removal. Display type is **Space Grotesk**, body text is **Inter**.
+
+Both themes are declared as tokens, so components never hard-code a colour. The video stage is the deliberate exception — it stays black in either theme, because that is the only honest background for grading a picture.
 
 ---
 
@@ -156,12 +165,14 @@ ReelCut-Platform/
     │   ├── (en)/                  # English at /
     │   └── (pl)/pl/               # Polish at /pl/
     └── components/
-        ├── Edytor.tsx             # session state, transport, render lifecycle
-        ├── OsCzasu.tsx            # the timeline
-        ├── PanelKorekty.tsx       # picture and sound controls
-        ├── eksport.ts             # canvas → MediaRecorder render pipeline
-        ├── model.ts               # types and timeline maths
-        └── tresc.ts               # all copy, PL and EN
+        ├── Editor.tsx             # session state, transport, render lifecycle
+        ├── Timeline.tsx           # the zoomable timeline
+        ├── FormatPanel.tsx        # aspect ratio and resolution
+        ├── AdjustPanel.tsx        # picture, sound and caption controls
+        ├── ThemeToggle.tsx        # light/dark switch
+        ├── render.ts              # canvas → MediaRecorder render pipeline
+        ├── project.ts             # types, timeline maths, crop geometry
+        └── content.ts             # all copy, PL and EN
 ```
 
 ---
