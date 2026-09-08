@@ -1,37 +1,72 @@
 @import 'tailwindcss';
 
 /*
- * ReelCut — system designu.
+ * ReelCut — design system.
  *
- * Charakter: montazownia. Ciemna baza, bo material wideo ocenia sie na ciemnym
- * tle, koral do ciecia i wszystkiego, co usuwa, oraz turkus wylacznie na
- * glowice odtwarzania. Swiadomie inaczej niz CVForge, ktory jest papierem.
+ * Character: a cutting room. Cold, near-black surfaces because footage is
+ * judged against dark surroundings, with electric lime for anything that acts
+ * and a warm red kept strictly for cuts and removal. Deliberately unlike
+ * CVForge, which is warm paper — and unlike the other platform sites, which
+ * are amber or green.
+ *
+ * Dark is the default here; light exists for anyone editing in daylight.
  */
 
 @theme {
-  --color-night-900: #0b0e13;
-  --color-night-800: #12161d;
-  --color-night-700: #1b2029;
-  --color-night-600: #262d38;
+  --color-base: #0a0c11;
+  --color-panel: #12151c;
+  --color-panel-2: #1a1f28;
+  --color-edge: #262d3a;
+  --color-edge-2: #38414f;
 
-  --color-mist-50: #f6f8fa;
-  --color-mist-100: #e7ebf0;
-  --color-mist-300: #9aa4b2;
-  --color-mist-400: #78828f;
+  --color-text: #eef2f7;
+  --color-text-2: #c3cbd7;
+  --color-text-3: #8b95a5;
+  --color-text-4: #6b7484;
 
-  --color-coral-600: #d94a2b;
-  --color-coral-500: #f4603e;
-  --color-coral-400: #ff8266;
+  --color-lime: #b8f135;
+  --color-lime-2: #cdf96a;
+  --color-lime-soft: #1d2410;
 
-  --color-teal-400: #2dd4bf;
-  --color-teal-500: #14b8a6;
+  --color-cut: #ff5c47;
+  --color-cut-2: #ff8672;
 
   --font-display: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
+/*
+ * Light theme.
+ *
+ * Only the tokens change; components keep reading the same names. The video
+ * stage stays black in both themes — footage is always judged on black.
+ */
+:root[data-theme='light'] {
+  --color-base: #f4f6f9;
+  --color-panel: #ffffff;
+  --color-panel-2: #eef1f6;
+  --color-edge: #dde2ea;
+  --color-edge-2: #c3ccd9;
+
+  --color-text: #0f131a;
+  --color-text-2: #2f3743;
+  --color-text-3: #5d6675;
+  --color-text-4: #7d8797;
+
+  --color-lime: #4d7c0f;
+  --color-lime-2: #3f6212;
+  --color-lime-soft: #eef7dc;
+
+  --color-cut: #d93a24;
+  --color-cut-2: #b32d19;
+}
+
 :root {
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
 }
 
 html {
@@ -53,50 +88,61 @@ html {
 }
 
 body {
-  background: var(--color-night-900);
-  color: var(--color-mist-100);
+  background: var(--color-base);
+  color: var(--color-text-2);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
 }
 
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--color-teal-400);
+  outline: 3px solid var(--color-lime);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Suwaki osi czasu — natywny input[type=range] w skorze montazowni. */
-.suwak-osi {
+/* Timeline and adjustment sliders, dressed for the cutting room. */
+.rc-slider {
   appearance: none;
   background: transparent;
 }
 
-.suwak-osi::-webkit-slider-runnable-track {
+.rc-slider::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: var(--color-night-600);
+  background: var(--color-edge);
 }
 
-.suwak-osi::-moz-range-track {
+.rc-slider::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: var(--color-night-600);
+  background: var(--color-edge);
 }
 
-.suwak-osi::-webkit-slider-thumb {
+.rc-slider::-webkit-slider-thumb {
   appearance: none;
   margin-top: -6px;
   height: 16px;
   width: 16px;
   border-radius: 999px;
-  background: var(--color-teal-400);
-  border: 2px solid var(--color-night-900);
+  background: var(--color-lime);
+  border: 2px solid var(--color-base);
 }
 
-.suwak-osi::-moz-range-thumb {
+.rc-slider::-moz-range-thumb {
   height: 16px;
   width: 16px;
-  border: 2px solid var(--color-night-900);
+  border: 2px solid var(--color-base);
   border-radius: 999px;
-  background: var(--color-teal-400);
+  background: var(--color-lime);
+}
+
+/* A piece switched off on the timeline: still visible, clearly excluded. */
+.rc-piece-off {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    color-mix(in srgb, var(--color-cut) 22%, transparent) 5px,
+    color-mix(in srgb, var(--color-cut) 22%, transparent) 10px
+  );
 }
