@@ -1,0 +1,82 @@
+name: Deploy ReelCut
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-reelcut
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify export
+        run: |
+          test -f out/index.html || { echo "brak out/index.html"; exit 1; }
+          grep -q "main-content" out/index.html || { echo "brak landmarku main"; exit 1; }
+          echo "Eksport zawiera $(find out -name '*.html' | wc -l) stron."
+
+      # Serwis jest publikowany dwiema drogami, bo o zrodle Pages decyduje
+      # ustawienie w repozytorium, ktorego workflow nie widzi:
+      #
+      #   Source = GitHub Actions          -> publikuje zadanie `deploy` ponizej
+      #   Source = Deploy from a branch    -> publikuje galaz `gh-pages`
+      #
+      # Dzieki temu strona wstaje niezaleznie od tego, ktora opcje wybrano.
+      - name: Publikacja na galaz gh-pages
+        run: |
+          cp CNAME out/CNAME 2>/dev/null || true
+          touch out/.nojekyll
+          cd out
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "build: $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
+          echo "Galaz gh-pages zaktualizowana."
+
+      - uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    # Nie przerywa wdrozenia, gdy zrodlem Pages jest galaz, a nie Actions —
+    # w tym wariancie strone publikuje juz `gh-pages`.
+    continue-on-error: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
