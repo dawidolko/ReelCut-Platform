@@ -1,86 +1,88 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Tresc } from './tresc';
+import type { Content } from './content';
+import { ThemeToggle } from './ThemeToggle';
 
-export function SiteHeader({ t }: { t: Tresc }) {
-  const [otwarte, setOtwarte] = useState(false);
+export function SiteHeader({ content }: { content: Content }) {
+  const [open, setOpen] = useState(false);
 
-  /*
-   * Escape zamyka menu na telefonie. Bez tego jedynym wyjsciem jest trafienie
-   * w przycisk — a osoba poruszajaca sie klawiatura nie ma jak sie wycofac.
-   */
+  /* Escape closes the mobile menu — otherwise the only way out is the button. */
   useEffect(() => {
-    if (!otwarte) return;
-    const naKlawisz = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOtwarte(false);
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('keydown', naKlawisz);
-    return () => document.removeEventListener('keydown', naKlawisz);
-  }, [otwarte]);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
-  const linki = [
-    { href: '#edytor', label: t.nav.edytor },
-    { href: '#mozliwosci', label: t.nav.mozliwosci },
-    { href: '#jak', label: t.nav.jak },
-    { href: '#faq', label: t.nav.faq },
+  const links = [
+    { href: '#editor', label: content.nav.editor },
+    { href: '#features', label: content.nav.features },
+    { href: '#how', label: content.nav.how },
+    { href: '#faq', label: content.nav.faq },
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-night-700 bg-night-900/90 backdrop-blur print:hidden">
+    <header className="sticky top-0 z-50 border-b border-edge bg-base/90 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <a href={t.sciezka} className="flex items-center gap-2.5">
+        <a href={content.path} className="flex items-center gap-2.5">
           <span
             aria-hidden="true"
-            className="grid size-9 place-items-center rounded-md bg-coral-500 font-display text-lg font-bold text-night-900"
+            className="grid size-9 place-items-center rounded-md bg-lime font-display text-lg font-bold text-base"
           >
             RC
           </span>
-          <span className="font-display text-xl font-extrabold tracking-tight text-mist-50">ReelCut</span>
+          <span className="font-display text-xl font-extrabold tracking-tight text-text">ReelCut</span>
         </a>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label={t.nav.edytor}>
-          {linki.map((link) => (
+        <nav className="hidden items-center gap-1 md:flex" aria-label={content.nav.editor}>
+          {links.map((link, index) => (
             <a
-              key={link.href}
+              key={`${link.href}-${index}`}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-mist-300 transition-colors hover:bg-night-800 hover:text-mist-50"
+              className="rounded-md px-3 py-2 text-sm font-medium text-text-3 transition-colors hover:bg-panel hover:text-text"
             >
               {link.label}
             </a>
           ))}
           <a
-            href={t.drugiJezyk.sciezka}
-            hrefLang={t.drugiJezyk.kod}
-            className="ml-2 rounded-md border border-night-600 px-3 py-1.5 text-sm font-medium text-mist-300 transition-colors hover:border-teal-400 hover:text-teal-400"
+            href={content.otherLocale.path}
+            hrefLang={content.otherLocale.code}
+            className="ml-2 rounded-md border border-edge px-3 py-1.5 text-sm font-medium text-text-3 transition-colors hover:border-lime hover:text-lime"
           >
-            {t.drugiJezyk.etykieta}
+            {content.otherLocale.label}
           </a>
+          <ThemeToggle content={content} />
         </nav>
 
-        <button
-          type="button"
-          onClick={() => setOtwarte((v) => !v)}
-          aria-expanded={otwarte}
-          aria-controls="menu-mobilne"
-          className="rounded-md p-2 text-mist-300 transition-colors hover:bg-night-800 hover:text-mist-50 md:hidden"
-        >
-          <span className="sr-only">{t.nav.edytor}</span>
-          <svg viewBox="0 0 20 20" fill="none" className="size-5" aria-hidden="true">
-            <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemeToggle content={content} />
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            className="rounded-md p-2 text-text-3 transition-colors hover:bg-panel hover:text-text"
+          >
+            <span className="sr-only">{content.common.openMenu}</span>
+            <svg viewBox="0 0 20 20" fill="none" className="size-5" aria-hidden="true">
+              <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {otwarte && (
-        <nav id="menu-mobilne" className="border-t border-night-700 px-4 py-3 md:hidden" aria-label={t.nav.edytor}>
+      {open && (
+        <nav id="mobile-menu" className="border-t border-edge px-4 py-3 md:hidden" aria-label={content.nav.editor}>
           <ul className="space-y-1">
-            {linki.map((link) => (
-              <li key={link.href}>
+            {links.map((link, index) => (
+              <li key={`${link.href}-${index}`}>
                 <a
                   href={link.href}
-                  onClick={() => setOtwarte(false)}
-                  className="block rounded-md px-3 py-2 text-sm font-medium text-mist-100 hover:bg-night-800"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-md px-3 py-2 text-sm font-medium text-text hover:bg-panel"
                 >
                   {link.label}
                 </a>
@@ -88,11 +90,11 @@ export function SiteHeader({ t }: { t: Tresc }) {
             ))}
             <li>
               <a
-                href={t.drugiJezyk.sciezka}
-                hrefLang={t.drugiJezyk.kod}
-                className="block rounded-md px-3 py-2 text-sm font-medium text-teal-400 hover:bg-night-800"
+                href={content.otherLocale.path}
+                hrefLang={content.otherLocale.code}
+                className="block rounded-md px-3 py-2 text-sm font-medium text-lime hover:bg-panel"
               >
-                {t.drugiJezyk.etykieta}
+                {content.otherLocale.label}
               </a>
             </li>
           </ul>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../globals.css';
+import { THEME_INIT_SCRIPT } from '@/components/ThemeToggle';
 
 const OPIS =
   'A video editor that runs entirely in your browser: trim, arrange, adjust and render a finished file. Your footage is never uploaded, because the site has no backend.';
@@ -49,7 +50,7 @@ const daneStrukturalne = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(daneStrukturalne) }}

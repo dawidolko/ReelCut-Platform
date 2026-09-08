@@ -1,6 +1,6 @@
-import { StronaGlowna } from '@/components/StronaGlowna';
-import { TRESC } from '@/components/tresc';
+import { LandingPage } from '@/components/LandingPage';
+import { CONTENT } from '@/components/content';
 
 export default function Page() {
-  return <StronaGlowna t={TRESC.pl} />;
+  return <LandingPage content={CONTENT.pl} />;
 }
