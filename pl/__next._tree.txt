@@ -1,0 +1,7 @@
+:HL["/_next/static/chunks/1j8xg6en5nk-7.css","style"]
+:HL["https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap","style"]
+:HL["/img/hero.webp","image"]
+3:[["children",{"s":"__PAGE__","h":160}]]
+2:[["children",{"s":"pl","h":96,"c":"$Q3"}]]
+1:[["children",{"s":"(pl)","h":112,"c":"$Q2"}]]
+0:{"b":"iS24Y43tM-e2ieozhwk-3","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
