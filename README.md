@@ -86,6 +86,14 @@ Output is WebM with VP9 or VP8, whichever the browser reports it can record.
 
 ---
 
+## 🎬 Demo
+
+<p align="center">
+  <img src="docs/readme/demo.webp" alt="ReelCut: a short scroll through the live site" width="80%">
+</p>
+
+---
+
 ## 🛠️ Technology Stack
 
 ### Frontend
