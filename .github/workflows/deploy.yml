@@ -36,18 +36,18 @@ jobs:
 
       - name: Verify export
         run: |
-          test -f out/index.html || { echo "brak out/index.html"; exit 1; }
-          grep -q "main-content" out/index.html || { echo "brak landmarku main"; exit 1; }
-          echo "Eksport zawiera $(find out -name '*.html' | wc -l) stron."
+          test -f out/index.html || { echo "missing out/index.html"; exit 1; }
+          grep -q "main-content" out/index.html || { echo "missing main landmark"; exit 1; }
+          echo "Export contains $(find out -name '*.html' | wc -l) pages."
 
-      # Serwis jest publikowany dwiema drogami, bo o zrodle Pages decyduje
-      # ustawienie w repozytorium, ktorego workflow nie widzi:
+      # The site is published in two ways, because the Pages source is decided by a
+      # repository setting that the workflow cannot see:
       #
-      #   Source = GitHub Actions          -> publikuje zadanie `deploy` ponizej
-      #   Source = Deploy from a branch    -> publikuje galaz `gh-pages`
+      #   Source = GitHub Actions          -> published by the `deploy` job below
+      #   Source = Deploy from a branch    -> published from the `gh-pages` branch
       #
-      # Dzieki temu strona wstaje niezaleznie od tego, ktora opcje wybrano.
-      - name: Publikacja na galaz gh-pages
+      # This way the site comes up regardless of which option is selected.
+      - name: Publish to the gh-pages branch
         run: |
           cp CNAME out/CNAME 2>/dev/null || true
           touch out/.nojekyll
@@ -58,7 +58,7 @@ jobs:
           git add -A
           git commit -q -m "build: $GITHUB_SHA"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
-          echo "Galaz gh-pages zaktualizowana."
+          echo "gh-pages branch updated."
 
       - uses: actions/configure-pages@v5
         continue-on-error: true
@@ -71,8 +71,8 @@ jobs:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
     needs: build
-    # Nie przerywa wdrozenia, gdy zrodlem Pages jest galaz, a nie Actions —
-    # w tym wariancie strone publikuje juz `gh-pages`.
+    # Do not fail the deployment when the Pages source is a branch rather than
+    # Actions - in that setup `gh-pages` already publishes the site.
     continue-on-error: true
     environment:
       name: github-pages

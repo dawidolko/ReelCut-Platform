@@ -1,14 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /*
-   * Eksport statyczny: montaz i renderowanie dzieja sie w przegladarce, wiec
-   * nie ma czego uruchamiac po stronie serwera. Calosc trafia na GitHub Pages.
+   * Static export: editing and rendering happen in the browser, so there is
+   * nothing to run on the server side. Everything goes to GitHub Pages.
    */
   output: 'export',
   trailingSlash: true,
   experimental: { globalNotFound: true },
   images: {
-    // Pod `output: 'export'` optymalizator next/image nie dziala.
+    /*
+     * The next/image optimizer does not work with `output: 'export'`.
+     */
     unoptimized: true,
   },
 };
