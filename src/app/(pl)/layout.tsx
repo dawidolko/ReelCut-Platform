@@ -5,7 +5,7 @@ import { CONTENT_SECURITY_POLICY } from '../csp';
 import { THEME_INIT_SCRIPT } from '@/components/ThemeToggle';
 
 const OPIS =
-  'Montaż wideo działający w przeglądarce: przytnij, poskładaj, popraw obraz i wyrenderuj gotowy plik. Materiał nie jest nigdzie wysyłany, bo serwis nie ma backendu.';
+  'Montaż wideo działający w przeglądarce: przytnij, poskładaj, popraw obraz i wyrenderuj plik. Materiał nie jest nigdzie wysyłany, bo serwis nie ma backendu.';
 
 const OG_ALT = 'ReelCut: edytor wideo działający w przeglądarce';
 
