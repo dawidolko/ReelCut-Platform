@@ -62,12 +62,14 @@ export function LandingPage({ content }: { content: Content }) {
               <div className="overflow-hidden rounded-2xl border border-edge bg-panel p-3">
                 <div className="relative overflow-hidden rounded-lg bg-black">
                   <img
-                    src="/img/hero.webp"
+                    src="/img/hero-800.webp"
+                    srcSet="/img/hero-480.webp 480w, /img/hero-800.webp 800w, /img/hero.webp 1600w"
+                    sizes="(min-width: 1024px) 46vw, 100vw"
                     alt=""
                     width={1600}
                     height={1100}
                     className="aspect-video w-full object-cover opacity-90"
-                    loading="eager"
+                    fetchPriority="high"
                     decoding="async"
                   />
                   {/* The 9:16 crop, drawn over the frame. */}

@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import '../globals.css';
+import { fontVariables } from '../fonts';
+import { CONTENT_SECURITY_POLICY } from '../csp';
 import { THEME_INIT_SCRIPT } from '@/components/ThemeToggle';
 
 const OPIS =
-  'Montaż wideo działający w całości w przeglądarce: przytnij, poskładaj, popraw obraz i wyrenderuj gotowy plik. Materiał nie jest nigdzie wysyłany, bo serwis nie ma backendu.';
+  'Montaż wideo działający w przeglądarce: przytnij, poskładaj, popraw obraz i wyrenderuj gotowy plik. Materiał nie jest nigdzie wysyłany, bo serwis nie ma backendu.';
+
+const OG_ALT = 'ReelCut: edytor wideo działający w przeglądarce';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://reelcut.dawidolko.pl'),
@@ -20,8 +24,9 @@ export const metadata: Metadata = {
     siteName: 'ReelCut',
     title: 'ReelCut — montaż wideo w przeglądarce',
     description: OPIS,
+    images: [{ url: 'https://reelcut.dawidolko.pl/og-image.png', width: 1200, height: 630, alt: OG_ALT }],
   },
-  twitter: { card: 'summary_large_image', title: 'ReelCut — montaż wideo w przeglądarce', description: OPIS },
+  twitter: { card: 'summary_large_image', title: 'ReelCut — montaż wideo w przeglądarce', description: OPIS, images: ['https://reelcut.dawidolko.pl/og-image.png'] },
   alternates: {
     canonical: 'https://reelcut.dawidolko.pl/pl/',
     languages: {
@@ -31,6 +36,7 @@ export const metadata: Metadata = {
     },
   },
   robots: { index: true, follow: true },
+  referrer: 'strict-origin-when-cross-origin',
 };
 
 const daneStrukturalne = {
@@ -48,15 +54,10 @@ const daneStrukturalne = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pl" suppressHydrationWarning>
+    <html lang="pl" className={fontVariables} suppressHydrationWarning>
       <head>
+        <meta httpEquiv="Content-Security-Policy" content={CONTENT_SECURITY_POLICY} />
         <script src="/a11y/a11y-panel.js" data-accent="#1d4ed8" defer></script>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
-        />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <script
           type="application/ld+json"

@@ -6,6 +6,7 @@ const nextConfig = {
    */
   output: 'export',
   trailingSlash: true,
+  experimental: { globalNotFound: true },
   images: {
     // Pod `output: 'export'` optymalizator next/image nie dziala.
     unoptimized: true,

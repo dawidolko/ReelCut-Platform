@@ -22,7 +22,7 @@
   --color-text: #eef2f7;
   --color-text-2: #c3cbd7;
   --color-text-3: #8b95a5;
-  --color-text-4: #6b7484;
+  --color-text-4: #8590a1;
 
   --color-lime: #b8f135;
   --color-lime-2: #cdf96a;
@@ -31,8 +31,8 @@
   --color-cut: #ff5c47;
   --color-cut-2: #ff8672;
 
-  --font-display: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /*
@@ -51,7 +51,7 @@
   --color-text: #0f131a;
   --color-text-2: #2f3743;
   --color-text-3: #5d6675;
-  --color-text-4: #7d8797;
+  --color-text-4: #626c7c;
 
   --color-lime: #4d7c0f;
   --color-lime-2: #3f6212;
