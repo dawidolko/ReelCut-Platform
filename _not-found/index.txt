@@ -1,0 +1,22 @@
+1:"$Sreact.fragment"
+2:"/_next/static/chunks/3zo_xaj3l4si5.js"
+3:"THEME_INIT_SCRIPT"
+4:I[22530,["$2"],"$3"]
+6:I[39756,["$2"],"default"]
+7:I[37457,["$2"],"default"]
+a:I[97367,["$2"],"OutletBoundary"]
+b:"$Sreact.suspense"
+d:"ViewportBoundary"
+e:I[97367,["$2"],"$d"]
+10:"MetadataBoundary"
+11:I[97367,["$2"],"$10"]
+13:I[68027,[],"default",1]
+:HL["/_next/static/chunks/3hrixv4dowqir.css","style"]
+8:X
+9:[["children",{"s":"__PAGE__","h":512,"d":{"r":["$","$1","c",{"children":[null,null,["$","$La",null,{"children":["$","$b",null,{"name":"Next.MetadataOutlet","children":"$@c"}]}]]}],"p":false,"v":null}}]]
+5:[["children",{"s":"/_not-found","h":512,"d":{"r":["$","$1","c",{"children":[null,["$","$L6",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L7",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],"p":false,"v":"$8"},"c":"$Q9"}]]
+0:{"P":null,"c":["","_not-found",""],"q":"","i":false,"t":{"t":{"s":"","h":528,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/3hrixv4dowqir.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}],["$","script","script-0",{"src":"/_next/static/chunks/3zo_xaj3l4si5.js","async":true,"nonce":"$undefined"}]],["$","html",null,{"lang":"en","className":"QcMyMq_variable xm-KIW_variable","suppressHydrationWarning":true,"children":[["$","head",null,{"children":[["$","meta",null,{"httpEquiv":"Content-Security-Policy","content":"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob:; media-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"}],["$","script",null,{"dangerouslySetInnerHTML":{"__html":"$4"}}],["$","script",null,{"src":"/a11y/a11y-panel.js","data-accent":"#1d4ed8","defer":true}]]}],["$","body",null,{"children":["$","main",null,{"id":"main-content","className":"mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-4 py-16 sm:px-6","children":[["$","p",null,{"className":"font-display text-sm font-bold uppercase tracking-widest text-text-3","children":"404"}],["$","h1",null,{"className":"mt-3 font-display text-4xl font-extrabold tracking-tight text-text sm:text-5xl","children":"Page not found"}],["$","p",null,{"className":"mt-4 text-lg leading-relaxed text-text-3","children":"The address may be mistyped, or the page may have moved."}],["$","div",null,{"className":"mt-8 flex flex-wrap gap-3","children":[["$","a",null,{"href":"/","className":"rounded-md px-6 py-3 font-bold transition bg-lime text-base hover:bg-lime-2","children":"Back to the home page"}],["$","a",null,{"href":"/pl/","lang":"pl","hrefLang":"pl","className":"rounded-md px-6 py-3 font-bold transition border border-edge-2 text-text-2 hover:border-lime hover:text-lime","children":"Strona główna po polsku"}]]}]]}]}]]}]]}],"p":false,"v":null},"c":"$Q5"},"h":{"r":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$Le",null,{"children":"$Lf"}],["$","$L11",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$b",null,{"name":"Next.Metadata","children":"$L12"}]}],null]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"p":false,"v":null}},"m":"$undefined","G":["$13",[]],"S":true,"r":"$undefined","s":"$undefined","a":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"g19i5Uuxnu3uZD8blreV-"}
+8:C
+f:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
+c:null
+12:[["$","title","0",{"children":"Page not found — ReelCut"}],["$","meta","1",{"name":"description","content":"This address does not exist on ReelCut. Go back to the home page or open the Polish version of the site."}],["$","meta","2",{"name":"referrer","content":"strict-origin-when-cross-origin"}],["$","meta","3",{"name":"robots","content":"noindex, follow"}]]

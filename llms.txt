@@ -1,0 +1,12 @@
+# ReelCut
+
+> ReelCut is a video editor that runs entirely in the browser: trim, arrange, adjust, add captions and render a finished file. Footage is never uploaded, because the site has no backend.
+
+## Pages
+
+- [Home and editor (English)](https://reelcut.dawidolko.pl/): the editor, how rendering works and FAQ
+- [Home and editor (Polish)](https://reelcut.dawidolko.pl/pl/): the same page in Polish
+
+## Author
+
+- [Dawid Olko](https://dawidolko.pl): Fullstack / AI Developer who built this site

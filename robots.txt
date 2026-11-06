@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://reelcut.dawidolko.pl/sitemap.xml
