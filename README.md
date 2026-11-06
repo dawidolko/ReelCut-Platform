@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://reelcut.dawidolko.pl/"><img src="docs/readme/banner.webp" alt="ReelCut: web platform. The footage never leaves the tab" width="100%"></a>
+</p>
+
 # ReelCut
 
 > ✂️ **The footage never leaves the tab** — trim, crop to 9:16 and render a reel without uploading it anywhere
@@ -14,7 +18,7 @@ Nothing is uploaded and nothing is stored. The site is prerendered to files and 
 ![WCAG](https://img.shields.io/badge/WCAG%202.2-AA-16A34A?logo=accessibleicon&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**Live:** [reelcut.dawidolko.pl](https://reelcut.dawidolko.pl) · **Polski:** [reelcut.dawidolko.pl/pl](https://reelcut.dawidolko.pl/pl/)
+**[Live site](https://reelcut.dawidolko.pl/)** · [Screenshots](#️-screenshots) · [Getting started](#-getting-started)
 
 ---
 
@@ -152,6 +156,8 @@ Both themes are declared as tokens, so components never hard-code a colour. The 
 - Keyboard shortcuts stand down while focus is inside an input, so a space can still be typed into the caption.
 - A skip link, a visible focus ring on every interactive element and a `prefers-reduced-motion` block that disables animation.
 
+An accessibility panel in the corner of every page changes text size, contrast, font and motion, and remembers the choice on the device. It sits on top of the markup and does not replace accessible markup.
+
 ---
 
 ## 📁 Project Structure
@@ -182,3 +188,11 @@ ReelCut-Platform/
 ## 📄 License
 
 MIT © [Dawid Olko](https://dawidolko.pl)
+
+---
+
+## 👨‍💻 Author
+
+**Dawid Olko** · Fullstack / AI Developer
+
+[Portfolio](https://olkodawid.dawidolko.pl) · [CV](https://cv.dawidolko.pl) · [LinkedIn](https://www.linkedin.com/in/dawidolko/) · [GitHub](https://github.com/dawidolko)
